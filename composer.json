@@ -1,0 +1,33 @@
+{
+    "name": "martindilling/postit-printer",
+    "description": "Generate pdf files to print on post-it notes.",
+    "keywords": ["post-it", "pdf"],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Martin Dilling-Hansen",
+            "email": "martindilling@gmail.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Dilling\\PostItPrinter\\": "src/"
+        }
+    },
+    "require": {
+        "ext-zip": "*",
+        "guzzlehttp/guzzle": "~6.0",
+        "symfony/console": "~3.0|~4.0",
+        "symfony/filesystem": "~3.0|~4.0",
+        "symfony/process": "~3.0|~4.0",
+        "tecnickcom/tcpdf": "^6.2",
+        "illuminate/support": "^5.8",
+        "ext-mbstring": "*",
+        "ext-json": "*",
+        "php-school/cli-menu": "^3.2",
+        "guzzlehttp/psr7": "^1.6"
+    },
+    "bin": [
+        "postit-printer"
+    ]
+}
