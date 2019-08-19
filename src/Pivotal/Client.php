@@ -2,7 +2,6 @@
 
 namespace Dilling\PostItPrinter\Pivotal;
 
-use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Psr\Http\Message\ResponseInterface;
 

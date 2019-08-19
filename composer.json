@@ -15,18 +15,18 @@
         }
     },
     "require": {
-        "ext-zip": "*",
+        "php": ">=7.1",
         "guzzlehttp/guzzle": "~5.0|~6.0",
         "symfony/console": "~3.0|~4.0",
         "symfony/filesystem": "~3.0|~4.0",
         "symfony/process": "~3.0|~4.0",
         "tecnickcom/tcpdf": "^6.2",
-        "illuminate/support": "^5.5",
-        "ext-mbstring": "*",
-        "ext-json": "*",
+        "illuminate/support": "^5.0|^6.0",
         "php-school/cli-menu": "^3.2",
-        "guzzlehttp/psr7": "^1.4|^1.5|^1.6"
+        "guzzlehttp/psr7": "^1.4|^1.5|^1.6",
+        "ext-json": "*"
     },
+    "prefer-stable": true,
     "bin": [
         "postit-printer"
     ]

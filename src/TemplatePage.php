@@ -2,9 +2,9 @@
 
 namespace Dilling\PostItPrinter;
 
-use Dilling\PostItPrinter\Card\CardTemplate;
-use Dilling\PostItPrinter\Pdf\Page;
 use TCPDF;
+use Dilling\PostItPrinter\Pdf\Page;
+use Dilling\PostItPrinter\Card\CardTemplate;
 
 class TemplatePage extends Page
 {

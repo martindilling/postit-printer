@@ -24,7 +24,7 @@ class CardsPage extends Page
     private $padding = 1;
 
     /**
-     * @param \Dilling\PostItPrinter\Card\Card[] $cards
+     * @param Card[] $cards
      * @param float $pageMargin
      * @param float $space
      * @param int $rows

@@ -8,6 +8,7 @@ use Dilling\PostItPrinter\CardsPage;
 use Dilling\PostItPrinter\Pdf\Document;
 use Dilling\PostItPrinter\TemplatePage;
 use Dilling\PostItPrinter\Pivotal\Client as PivotalClient;
+use GuzzleHttp\Exception\ClientException;
 use PhpSchool\CliMenu\Action\GoBackAction;
 use PhpSchool\CliMenu\MenuItem\StaticItem;
 use GuzzleHttp\Exception\RequestException;
@@ -22,6 +23,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use PhpSchool\CliMenu\Exception\InvalidTerminalException;
+use Symfony\Component\Console\Question\ConfirmationQuestion;
 
 class GenerateCommand extends Command
 {
@@ -37,20 +39,23 @@ class GenerateCommand extends Command
     /** @var PivotalClient */
     private $client;
 
-    /** @var string */
+    /** @var string|null */
     private $token;
 
-    /** @var int */
+    /** @var int|null */
     private $projectId;
 
-    /** @var int */
+    /** @var int|null */
     private $afterStoryId;
 
-    /** @var int */
+    /** @var int|null */
     private $beforeStoryId;
 
-    /** @var string */
+    /** @var string|null */
     private $size;
+
+    /** @var bool */
+    private $ignoreSettings = false;
 
     /** @var array */
     private $_projects_cache;
@@ -106,7 +111,8 @@ class GenerateCommand extends Command
             ->addOption('token', 't', InputOption::VALUE_OPTIONAL, 'Pivotal api token')
             ->addOption('project', 'p', InputOption::VALUE_OPTIONAL, 'Pivotal project id')
             ->addOption('after', 'a', InputOption::VALUE_OPTIONAL, 'Stories after this id')
-            ->addOption('before', 'b', InputOption::VALUE_OPTIONAL, 'Stories before this id');
+            ->addOption('before', 'b', InputOption::VALUE_OPTIONAL, 'Stories before this id')
+            ->addOption('ignore-settings', null, InputOption::VALUE_NONE, 'Start up without loading the settings');
     }
 
     /**
@@ -122,20 +128,53 @@ class GenerateCommand extends Command
     {
         $this->input = $input;
         $this->output = $output;
+        $this->ignoreSettings = (bool) $input->getOption('ignore-settings') ?? false;
 
         $settings = [];
-        if (file_exists($this->basePath . self::SETTINGS_PATH)) {
+        if (!$this->ignoreSettings && file_exists($this->basePath . self::SETTINGS_PATH)) {
             $settings = json_decode(\file_get_contents($this->basePath . self::SETTINGS_PATH), true);
         }
 
-        $this->token = (string) $input->getOption('token') ?: $settings['token'] ?? null; // 'fe1495d14eb0d263b42fd9199f203568'
-        $this->projectId = (int) $input->getOption('project') ?: $settings['projectId'] ?? null; // 738091
-        $this->afterStoryId = (int) $input->getOption('after') ?: $settings['afterStoryId'] ?? null; // 166930136
-        $this->beforeStoryId = (int) $input->getOption('before') ?: $settings['beforeStoryId'] ?? null; //166268119
-        $this->size = (string) $input->getOption('size') ?: $settings['size'] ?? null; // '76x76'
+        $this->token = ((string) $input->getOption('token')) ?: $settings['token'] ?? null;
+        $this->projectId = ((int) $input->getOption('project')) ?: $settings['projectId'] ?? null;
+        $this->afterStoryId = ((int) $input->getOption('after')) ?: $settings['afterStoryId'] ?? null;
+        $this->beforeStoryId = ((int) $input->getOption('before')) ?: $settings['beforeStoryId'] ?? null;
+        $this->size = ((string) $input->getOption('size')) ?: $settings['size'] ?? null;
         $this->client = $this->token ? new PivotalClient($this->token) : null;
 
-        $this->buildMenu();
+        try {
+            $this->buildMenu()->open();
+        } catch (ClientException $e) {
+            // Handling authorization exceptions
+            if ($e->getCode() === 403) {
+                // Write a somewhat decent error
+                $response = \json_decode($e->getResponse()->getBody(), true);
+                $this->output->writeln(
+                    "\n" . '<error>Authorization error.</error> ' .
+                    "\n<comment>" .
+                    $response['error'] . "\n" . $response['possible_fix'] .
+                    "</comment>\n"
+                );
+
+                // Ask if they want to start without their old settings
+                $helper = $this->getHelper('question');
+                $question = new ConfirmationQuestion('Start without old settings? [Y/n] ');
+
+                if (!$helper->ask($input, $output, $question)) {
+                    return;
+                }
+
+                // Reset all fields
+                $this->token = null;
+                $this->projectId = null;
+                $this->afterStoryId = null;
+                $this->beforeStoryId = null;
+                $this->client = $this->token ? new PivotalClient($this->token) : null;
+                $_projects_cache = [];
+                $_stories_cache = [];
+                $this->buildMenu()->open();
+            }
+        }
     }
 
     /**
@@ -265,7 +304,9 @@ class GenerateCommand extends Command
         // Update texts with our data
         $this->updateItemsWithData($menu, null, false);
         $menu->setSelectedItem($selected);
-        $menu->open();
+
+        // Open menu where you want it
+        return $menu;
     }
 
     private function generateTemplate()
